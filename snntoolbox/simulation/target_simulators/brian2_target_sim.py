@@ -96,6 +96,7 @@ class SNN(AbstractSNN):
             return
 
         self._conns = []
+        print("adding", np.prod(layer.output_shape[1:]), "neurons")
         self.layers.append(self.sim.NeuronGroup(
             np.prod(layer.output_shape[1:]), model=self.eqs, method='linear',
             reset=self.v_reset, threshold=self.threshold, dt=self._dt * self.sim.ms))
@@ -123,7 +124,7 @@ class SNN(AbstractSNN):
             self.connections[-1].w = input_weight.flatten()
         else:
             self.connections[-1].w = weights.flatten()
-        print("Lenght of weights:{}".format(len(self.connections[-1].w)))
+        print("Length of weights:{}".format(len(self.connections[-1].w)))
 
     def build_convolution(self, layer, input_weight=None):
         from snntoolbox.simulation.utils import build_convolution
@@ -141,9 +142,13 @@ class SNN(AbstractSNN):
             j = conn[1]
             self.connections[-1].connect(i=i, j=j)
         if input_weight is not None:
+            print("Using passed weights")
             self.connections[-1].w = input_weight.flatten()
         else:
-            self.connections[-1].w[i, j] = conn[2]
+            for conn in self._conns:
+                i = conn[0]
+                j = conn[1]
+                self.connections[-1].w[i, j] = conn[2]
 
     def build_pooling(self, layer, input_weight=None):
         from snntoolbox.simulation.utils import build_pooling

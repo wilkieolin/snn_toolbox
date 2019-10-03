@@ -350,9 +350,9 @@ def update_setup(config_filepath):
             # load_model method to fail if the network was trained on a
             # different platform or keras version
             # (see https://github.com/fchollet/keras/issues/4044).
-            with h5py.File(h5_filepath, 'a') as f:
-                if 'optimizer_weights' in f.keys():
-                    del f['optimizer_weights']
+            # with h5py.File(h5_filepath, 'a') as f:
+            #     if 'optimizer_weights' in f.keys():
+            #         del f['optimizer_weights']
             # Try loading the model.
             keras.models.load_model(str(h5_filepath), get_custom_activations_dict())
     elif model_lib == 'lasagne':
@@ -399,7 +399,7 @@ def update_setup(config_filepath):
     if not sample_idxs_to_test == []:
         if len(sample_idxs_to_test) != num_to_test:
             print(dedent("""
-            SNN toolbox warning: Settings mismatch. Adjusting 'num_to_test' to 
+            SNN toolbox warning: Settings mismatch. Adjusting 'num_to_test' to
             equal the number of 'sample_idxs_to_test'."""))
             config.set('simulation', 'num_to_test',
                        str(len(sample_idxs_to_test)))

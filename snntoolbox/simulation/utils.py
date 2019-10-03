@@ -408,6 +408,7 @@ class AbstractSNN:
         print("Building spiking model...")
 
         self.parsed_model = parsed_model
+        #get the number of classes by looking at the last layer
         self.num_classes = int(self.parsed_model.layers[-1].output_shape[-1])
         self.top_k = min(self.num_classes, self.config.getint('simulation',
                                                               'top_k'))
@@ -1162,7 +1163,7 @@ def build_convolution(layer, delay, transpose_kernel=False):
     i_offset = np.empty(np.prod(layer.output_shape[1:]))
     n = int(len(i_offset) / len(biases))
     for i in range(len(biases)):
-        i_offset[i:(i + 1) * n] = biases[i]
+        i_offset[i * n:(i + 1) * n] = biases[i]
 
     ii = 1 if keras.backend.image_data_format() == 'channels_first' else 0
 
