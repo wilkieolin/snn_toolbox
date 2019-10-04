@@ -63,7 +63,7 @@ class SNN(AbstractSNN):
         self._biases = []  # Temporary container for layer biases.
         self.connections = []  # Final container for all layers.
         self.threshold = 'v >= v_thresh'
-        self.v_reset = 'v = v - v_reset'
+        self.v_reset = 'v = v - v_thresh'
         self.eqs = """dv/dt = current : 1
                     current: hertz"""
         self.spikemonitors = []
@@ -346,7 +346,7 @@ class SNN(AbstractSNN):
         """
 
         if any(self._biases):  # TODO: Test biases
-            self.layers[-1].current = self._biases * self.sim.Hz
+            self.layers[-1].current = self._biases * self._dt * self.sim.Hz
             #warnings.warn("Biases not implemented.", RuntimeWarning)
 
     def set_spiketrain_stats_input(self):
