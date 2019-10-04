@@ -63,8 +63,9 @@ class SNN(AbstractSNN):
         self._biases = []  # Temporary container for layer biases.
         self.connections = []  # Final container for all layers.
         self.threshold = 'v >= v_thresh'
-        self.v_reset = 'v = v_reset'
-        self.eqs = 'v : 1'
+        self.v_reset = 'v = v - v_reset'
+        self.eqs = """dv/dt = current : 1
+                    current: hertz"""
         self.spikemonitors = []
         self.statemonitors = []
         self.snn = None
@@ -78,6 +79,7 @@ class SNN(AbstractSNN):
     def is_parallelizable(self):
         return False
 
+        #TODO - constant input
     def add_input_layer(self, input_shape):
 
         self.layers.append(self.sim.PoissonGroup(
@@ -98,7 +100,7 @@ class SNN(AbstractSNN):
         self._conns = []
         print("adding", np.prod(layer.output_shape[1:]), "neurons")
         self.layers.append(self.sim.NeuronGroup(
-            np.prod(layer.output_shape[1:]), model=self.eqs, method='linear',
+            np.prod(layer.output_shape[1:]), model=self.eqs, method='exponential_euler',
             reset=self.v_reset, threshold=self.threshold, dt=self._dt * self.sim.ms))
         self.connections.append(self.sim.Synapses(
             self.layers[-2], self.layers[-1], 'w:1', on_pre='v+=w',
@@ -137,18 +139,15 @@ class SNN(AbstractSNN):
         self.set_biases()
 
         print("Connecting layer...")
-        for conn in self._conns:
-            i = conn[0]
-            j = conn[1]
-            self.connections[-1].connect(i=i, j=j)
-        if input_weight is not None:
-            print("Using passed weights")
-            self.connections[-1].w = input_weight.flatten()
+        np_conns = np.array(self._conns)
+
+
+        self.connections[-1].connect(i=np_conns[:,0].astype('int64'), j=np_conns[:,1].astype('int64'))
+        if input_weight is None:
+            self.connections[-1].w = np_conns[:,2]
         else:
-            for conn in self._conns:
-                i = conn[0]
-                j = conn[1]
-                self.connections[-1].w[i, j] = conn[2]
+            self.connections[-1].w = input_weight.flatten()
+
 
     def build_pooling(self, layer, input_weight=None):
         from snntoolbox.simulation.utils import build_pooling
@@ -346,8 +345,9 @@ class SNN(AbstractSNN):
         This has not been tested yet.
         """
 
-        if any(self._biases):  # TODO: Implement biases.
-            warnings.warn("Biases not implemented.", RuntimeWarning)
+        if any(self._biases):  # TODO: Test biases
+            self.layers[-1].current = self._biases * self.sim.Hz
+            #warnings.warn("Biases not implemented.", RuntimeWarning)
 
     def set_spiketrain_stats_input(self):
         AbstractSNN.set_spiketrain_stats_input(self)
