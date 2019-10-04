@@ -141,7 +141,6 @@ class SNN(AbstractSNN):
         print("Connecting layer...")
         np_conns = np.array(self._conns)
 
-
         self.connections[-1].connect(i=np_conns[:,0].astype('int64'), j=np_conns[:,1].astype('int64'))
         if input_weight is None:
             self.connections[-1].w = np_conns[:,2]
