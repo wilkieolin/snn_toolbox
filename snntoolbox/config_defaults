@@ -82,6 +82,14 @@ reset = Reset by subtraction
 leak = False
 bias_relaxation = False
 
+[stdp]
+gmax = 1
+taupre = 20
+taupost = 20
+dApre = 0.05
+dApost = 0.06
+stdp_on = 0
+
 [parameter_sweep]
 param_values = []
 param_name = v_thresh

@@ -99,9 +99,24 @@ class SNN(AbstractSNN):
         self.layers.append(self.sim.NeuronGroup(
             np.prod(layer.output_shape[1:]), model=self.eqs, method='linear',
             reset=self.v_reset, threshold=self.threshold, dt=self._dt * self.sim.ms))
-        self.connections.append(self.sim.Synapses(
-            self.layers[-2], self.layers[-1], 'w:1', on_pre='v+=w',
-            dt=self._dt*self.sim.ms))
+        #STDP synapses
+        if 'Conv' in layer.__class__.__name__:
+            #Disable for convolutional layers; we pre-convolve the kernel into a large fixed matrix. STDP on this layer won't be convertible back to std. ANN
+            self.connections.append(self.sim.Synapses(
+                self.layers[-2], self.layers[-1], 'w:1', on_pre='v+=w',
+                dt=self._dt*self.sim.ms))
+        else:
+            self.connections.append(self.sim.Synapses(
+                self.layers[-2], self.layers[-1], """w: 1
+                dApre/dt = -Apre / taupre : 1 (event-driven)
+                dApost/dt = -Apost / taupost : 1 (event-driven)""",
+                on_pre='''v += w
+                    Apre += dApre
+                    w = clip(w + Apost * stdp_on, -gmax, gmax)''',
+                on_post='''Apost += dApost
+                     w = clip(w + Apre * stdp_on, -gmax, gmax)''',
+                dt=self._dt*self.sim.ms))
+
         self.layers[-1].add_attribute('label')
         self.layers[-1].label = layer.name
         if 'spiketrains' in self._plot_keys:
@@ -136,12 +151,12 @@ class SNN(AbstractSNN):
         self.set_biases()
 
         print("Connecting layer...")
-	
+
         np_conns = np.array(self._conns)
 
         self.connections[-1].connect(i=np_conns[:, 0].astype('int64'),
 	j=np_conns[:, 1].astype('int64'))
-	
+
         if input_weight is None:
             self.connections[-1].w = np_conns[:, 2]
         else:
@@ -284,7 +299,14 @@ class SNN(AbstractSNN):
         self._cell_params = {
             'v_thresh': self.config.getfloat('cell', 'v_thresh'),
             'v_reset': self.config.getfloat('cell', 'v_reset'),
-            'tau_m': self.config.getfloat('cell', 'tau_m') * self.sim.ms}
+            'tau_m': self.config.getfloat('cell', 'tau_m') * self.sim.ms,
+            'gmax' : self.config.getfloat('stdp', 'gmax'),
+            'taupre' : self.config.getfloat('stdp', 'taupre') * self.sim.ms,
+            'taupost' : self.config.getfloat('stdp', 'taupost') * self.sim.ms,
+            'dApre' : self.config.getfloat('stdp', 'dApre'),
+            'dApost' : self.config.getfloat('stdp', 'dApost'),
+            'stdp_on' : self.config.getint('stdp', 'stdp_on')
+            }
 
     def get_spiketrains(self, **kwargs):
         j = self._spiketrains_container_counter
