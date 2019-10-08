@@ -102,14 +102,16 @@ class SNN(AbstractSNN):
         #STDP synapses
         if 'Conv' in layer.__class__.__name__:
             #Disable for convolutional layers; we pre-convolve the kernel into a large fixed matrix. STDP on this layer won't be convertible back to std. ANN
+            print("Adding fixed Conv layer synapses")
             self.connections.append(self.sim.Synapses(
                 self.layers[-2], self.layers[-1], 'w:1', on_pre='v+=w',
                 dt=self._dt*self.sim.ms))
         else:
+            print("Adding STDP synapse layer...")
             self.connections.append(self.sim.Synapses(
-                self.layers[-2], self.layers[-1], """w: 1
+                self.layers[-2], self.layers[-1], '''w : 1
                 dApre/dt = -Apre / taupre : 1 (event-driven)
-                dApost/dt = -Apost / taupost : 1 (event-driven)""",
+                dApost/dt = -Apost / taupost : 1 (event-driven)''',
                 on_pre='''v += w
                     Apre += dApre
                     w = clip(w + Apost * stdp_on, -gmax, gmax)''',
@@ -205,7 +207,7 @@ class SNN(AbstractSNN):
                 raise NotImplementedError
 
         self.snn.run(self._duration*self.sim.ms, namespace=self._cell_params,
-                     report='stdout', report_period=10*self.sim.ms)
+                     report='stdout', report_period=100*self.sim.ms)
 
         output_b_l_t = self.get_recorded_vars(self.layers)
 
