@@ -1,0 +1,20 @@
+[paths]
+dataset_path = /home/wolin/snn_toolbox/forgetting/full/data
+filename_ann = keras_mnist
+
+[tools]
+evaluate_ann = True
+
+[simulation]
+simulator = brian2
+duration = 50
+num_to_test = 10
+batch_size = 1
+keras_backend = tensorflow
+
+[input]
+poisson_input = False
+
+[output]
+log_vars = {}
+plot_vars = {}
